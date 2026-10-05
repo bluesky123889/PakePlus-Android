@@ -1,0 +1,2846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>进制 · ASCII 工具</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --text-main: #0f172a;
+      --text-sub: #64748b;
+      --text-dim: #94a3b8;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --input-bg: #f8fafc;
+      --input-border: #e2e8f0;
+      --btn-bg: transparent;
+      --btn-border: rgba(15, 23, 42, 0.15);
+      --nav-bg: transparent;
+      --nav-border: transparent;
+      --group-bg: #f8fafc;
+      --output-bg: #f1f5f9;
+      --divider: transparent;
+      --accent: #4f46e5;
+      --accent-soft: #eef2ff;
+      --icon-color: #4f46e5;
+      --text-shadow: none;
+      --glass-blur: 16px;
+      --switch-off: rgba(148, 163, 184, 0.5);
+      --sticky-bg: transparent;
+      --ripple-color: rgba(79, 70, 229, 0.25);
+    }
+
+    body.wallpaper {
+      --text-main: #ffffff;
+      --text-sub: rgba(255, 255, 255, 0.85);
+      --text-dim: rgba(255, 255, 255, 0.65);
+      --card-bg: transparent;
+      --card-border: transparent;
+      --input-bg: rgba(255, 255, 255, 0.12);
+      --input-border: rgba(255, 255, 255, 0.25);
+      --btn-bg: transparent;
+      --btn-border: rgba(255, 255, 255, 0.3);
+      --nav-bg: transparent;
+      --nav-border: transparent;
+      --group-bg: transparent;
+      --output-bg: rgba(255, 255, 255, 0.1);
+      --divider: transparent;
+      --accent: #6366f1;
+      --accent-soft: rgba(255, 255, 255, 0.18);
+      --icon-color: #ffffff;
+      --text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 0 12px rgba(0, 0, 0, 0.2);
+      --switch-off: rgba(255, 255, 255, 0.25);
+      --sticky-bg: transparent;
+      --ripple-color: rgba(255, 255, 255, 0.35);
+    }
+
+    body.wallpaper.text-dark {
+      --text-main: #0f172a;
+      --text-sub: rgba(15, 23, 42, 0.75);
+      --text-dim: rgba(15, 23, 42, 0.55);
+      --input-bg: rgba(255, 255, 255, 0.45);
+      --input-border: rgba(15, 23, 42, 0.15);
+      --btn-bg: transparent;
+      --btn-border: rgba(15, 23, 42, 0.2);
+      --nav-bg: transparent;
+      --nav-border: transparent;
+      --output-bg: rgba(255, 255, 255, 0.4);
+      --divider: transparent;
+      --accent: #4f46e5;
+      --accent-soft: rgba(79, 70, 229, 0.15);
+      --icon-color: #4f46e5;
+      --text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
+      --switch-off: rgba(100, 116, 139, 0.4);
+      --sticky-bg: transparent;
+      --ripple-color: rgba(79, 70, 229, 0.25);
+    }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      color: var(--text-main);
+      line-height: 1.4;
+      -webkit-tap-highlight-color: transparent;
+      transition: color 0.3s;
+      overflow: hidden;
+    }
+
+    .phone-frame {
+      width: 100%;
+      max-width: 430px;
+      height: 100vh;
+      max-height: 900px;
+      background: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .bg-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      background: linear-gradient(160deg, #eef2ff 0%, #f8fafc 50%, #fdf2f8 100%);
+    }
+
+    body.wallpaper .bg-layer {
+      filter: blur(var(--glass-blur)) saturate(110%);
+      transform: scale(1.12);
+      transition: filter 0.2s ease;
+    }
+
+    .bg-layer video,
+    .bg-layer img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .bg-layer video.active,
+    .bg-layer img.active { display: block; }
+
+    .bg-veil {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.12);
+      display: none;
+      pointer-events: none;
+    }
+
+    body.wallpaper .bg-veil { display: block; }
+
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 18px 20px;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      position: relative;
+      z-index: 1;
+    }
+
+    .phone-frame.sub-active .main-content {
+      visibility: hidden;
+    }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .page-header,
+    .settings-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      margin: 0 -18px 18px;
+      padding: 18px 18px 14px;
+      background: var(--sticky-bg);
+      border-bottom: 1px solid var(--divider);
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    .page-header h2,
+    .settings-header h2 {
+      font-size: 1.65rem;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-shadow: var(--text-shadow);
+    }
+
+    .svg-icon {
+      width: 1.3em;
+      height: 1.3em;
+      stroke: var(--icon-color);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      flex-shrink: 0;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .page-header h2 .svg-icon,
+    .settings-header h2 .svg-icon {
+      width: 1.4em;
+      height: 1.4em;
+    }
+
+    .page-header h2 .badge,
+    .settings-header h2 .badge {
+      font-size: 0.65rem;
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 3px 9px;
+      border-radius: 100px;
+      font-weight: 500;
+      text-shadow: none;
+    }
+
+    body.wallpaper .page-header h2 .badge,
+    body.wallpaper .settings-header h2 .badge {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    .page-header p,
+    .settings-header p {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      margin-top: 4px;
+      text-shadow: var(--text-shadow);
+    }
+
+    /* ===== 二级页 ===== */
+    .sub-page {
+      position: absolute;
+      inset: 0;
+      z-index: 100;
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: translateX(100%);
+      transition: transform 0.34s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      pointer-events: none;
+      visibility: hidden;
+    }
+
+    .sub-page.active {
+      transform: translateX(0);
+      pointer-events: auto;
+      visibility: visible;
+      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .sub-page.level3 {
+      z-index: 110;
+    }
+
+    .sub-page .sub-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background: transparent;
+    }
+
+    .sub-page .sub-scroll {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      position: relative;
+      z-index: 1;
+      padding: 0 18px 24px;
+    }
+
+    .sub-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: var(--sticky-bg);
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .sub-header .back-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: transparent;
+      border: 1.5px solid var(--btn-border);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: 0.12s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sub-header .back-btn svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      position: relative;
+      z-index: 1;
+    }
+
+    .sub-header .back-btn:active {
+      transform: scale(0.9);
+      opacity: 0.85;
+    }
+
+    .sub-header h2 {
+      font-size: 1.2rem;
+      font-weight: 650;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
+      text-shadow: var(--text-shadow);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ===== 设置项 ===== */
+    .settings-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--divider);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .settings-item:last-child { border-bottom: none; }
+
+    .settings-item.clickable {
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s;
+      background: transparent;
+    }
+
+    .settings-item.clickable:active {
+      background: rgba(148, 163, 184, 0.18);
+    }
+
+    body.wallpaper .settings-item.clickable:active {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    body.wallpaper.text-dark .settings-item.clickable:active {
+      background: rgba(15, 23, 42, 0.08);
+    }
+
+    .settings-item-left { display: flex; align-items: center; gap: 12px; }
+
+    .settings-item-icon {
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .settings-item-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: var(--icon-color);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .settings-item-label {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text-main);
+      text-shadow: var(--text-shadow);
+    }
+
+    .settings-item-desc {
+      font-size: 0.72rem;
+      color: var(--text-sub);
+      margin-top: 2px;
+      text-shadow: var(--text-shadow);
+    }
+
+    .settings-item-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-dim);
+    }
+
+    .settings-item-right .value {
+      color: var(--text-sub);
+      font-size: 0.82rem;
+      text-shadow: var(--text-shadow);
+    }
+
+    .settings-item-right .chevron {
+      width: 18px;
+      height: 18px;
+      stroke: var(--text-dim);
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      opacity: 0.6;
+    }
+
+    /* ===== 卡片 ===== */
+    .input-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 18px;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+
+    .field label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-main);
+      margin-bottom: 6px;
+      text-shadow: var(--text-shadow);
+    }
+
+    .field input,
+    .field textarea {
+      width: 100%;
+      padding: 15px 16px;
+      font-size: 1rem;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--input-bg);
+      border: 1.5px solid var(--input-border);
+      border-radius: 16px;
+      outline: none;
+      transition: 0.15s;
+      color: var(--text-main);
+      -webkit-appearance: none;
+      appearance: none;
+      text-shadow: var(--text-shadow);
+    }
+
+    .field textarea { resize: none; min-height: 90px; }
+
+    .field input:focus,
+    .field textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.3);
+    }
+
+    .field input::placeholder,
+    .field textarea::placeholder {
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      font-family: system-ui, sans-serif;
+      text-shadow: none;
+    }
+
+    .base-picker {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .base-picker .picker-group { flex: 1; position: relative; }
+
+    .base-picker .picker-label {
+      font-size: 0.68rem;
+      color: var(--text-sub);
+      font-weight: 500;
+      margin-bottom: 4px;
+      padding-left: 4px;
+      letter-spacing: 0.03em;
+      text-shadow: var(--text-shadow);
+    }
+
+    .base-picker select {
+      width: 100%;
+      padding: 13px 34px 13px 14px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-main);
+      background: var(--input-bg);
+      border: 1.5px solid var(--input-border);
+      border-radius: 14px;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      cursor: pointer;
+      transition: 0.15s;
+      text-shadow: var(--text-shadow);
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+
+    .base-picker select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.3);
+    }
+
+    .base-picker select option {
+      color: #0f172a;
+      background: #ffffff;
+    }
+
+    .swap-btn {
+      background: var(--btn-bg);
+      border: 1.5px solid var(--btn-border);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--icon-color);
+      cursor: pointer;
+      flex-shrink: 0;
+      margin-top: 18px;
+      transition: 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .swap-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--icon-color);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      position: relative;
+      z-index: 1;
+    }
+
+    .swap-btn:active {
+      transform: scale(0.92) rotate(180deg);
+    }
+
+    .btn-row { display: flex; gap: 10px; margin-top: 6px; }
+
+    .btn {
+      flex: 1;
+      background: var(--btn-bg);
+      border: 1.5px solid var(--btn-border);
+      padding: 14px 12px;
+      font-size: 0.92rem;
+      font-weight: 500;
+      border-radius: 16px;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      user-select: none;
+      text-shadow: var(--text-shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn svg {
+      width: 17px;
+      height: 17px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: transparent;
+      border-color: var(--accent);
+      color: var(--accent);
+      text-shadow: none;
+      font-weight: 600;
+    }
+
+    body.wallpaper .btn-primary {
+      background: transparent;
+      border-color: #6366f1;
+      color: #a5b4fc;
+    }
+
+    body.wallpaper.text-dark .btn-primary {
+      background: transparent;
+      border-color: #4f46e5;
+      color: #4f46e5;
+    }
+
+    .btn-primary:active { opacity: 0.85; }
+
+    .output-box {
+      background: var(--output-bg);
+      border-radius: 16px;
+      padding: 16px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.95rem;
+      color: var(--text-main);
+      word-break: break-all;
+      white-space: pre-wrap;
+      border: 1.5px solid var(--input-border);
+      min-height: 56px;
+      margin-top: 4px;
+      text-shadow: var(--text-shadow);
+    }
+
+    .output-box.empty {
+      color: var(--text-dim);
+      font-family: system-ui, sans-serif;
+      font-style: italic;
+      text-shadow: var(--text-shadow);
+    }
+
+    /* ===== 输出框容器 + 复制按钮 ===== */
+    .output-wrap {
+      position: relative;
+      margin-top: 4px;
+    }
+
+    .output-wrap .output-box {
+      margin-top: 0;
+      padding-right: 48px;
+      min-height: 56px;
+    }
+
+    .output-copy-btn {
+      position: absolute;
+      top: 50%;
+      right: 8px;
+      transform: translateY(-50%);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: transparent;
+      border: 1.5px solid var(--input-border);
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      z-index: 2;
+      padding: 0;
+    }
+
+    .output-copy-btn svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .output-copy-btn:active {
+      transform: translateY(-50%) scale(0.9);
+    }
+
+    .output-copy-btn.copied {
+      color: #16a34a;
+      border-color: #16a34a;
+    }
+
+    body.wallpaper .output-copy-btn.copied {
+      color: #4ade80;
+      border-color: #4ade80;
+    }
+
+    .hint {
+      font-size: 0.72rem;
+      color: var(--text-sub);
+      margin-top: 6px;
+      padding-left: 4px;
+      text-shadow: var(--text-shadow);
+    }
+
+    .bottom-nav {
+      display: flex;
+      background: var(--nav-bg);
+      border-top: 1px solid var(--nav-border);
+      padding: 6px 12px 12px;
+      flex-shrink: 0;
+      gap: 6px;
+      position: relative;
+      z-index: 2;
+      transition: background 0.3s, border-color 0.3s, transform 0.34s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .phone-frame.sub-active .bottom-nav {
+      transform: translateY(100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 8px 4px;
+      border-radius: 14px;
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 0.7rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      text-shadow: var(--text-shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .nav-item .nav-icon {
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s;
+      position: relative;
+      z-index: 1;
+    }
+
+    .nav-item .nav-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .nav-item.active {
+      color: var(--text-main);
+      background: var(--accent-soft);
+    }
+
+    body.wallpaper .nav-item.active {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    body.wallpaper.text-dark .nav-item.active {
+      background: rgba(79, 70, 229, 0.18);
+      color: #4f46e5;
+    }
+
+    .nav-item.active .nav-icon { transform: scale(1.05); }
+
+    .settings-group {
+      background: var(--group-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 18px;
+      padding: 6px 0;
+      margin-bottom: 18px;
+      transition: background 0.3s, border-color 0.3s;
+      overflow: hidden;
+    }
+
+    .group-label {
+      font-size: 0.68rem;
+      color: var(--text-sub);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 8px 18px 4px;
+      text-shadow: var(--text-shadow);
+    }
+
+    .switch {
+      position: relative;
+      width: 48px;
+      height: 28px;
+      background: var(--switch-off);
+      border-radius: 40px;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+      flex-shrink: 0;
+      border: none;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      z-index: 1;
+    }
+
+    .switch.active { background: var(--accent); }
+
+    body.wallpaper .switch.active {
+      background: #6366f1;
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.55);
+    }
+
+    body.wallpaper.text-dark .switch.active {
+      background: #4f46e5;
+      box-shadow: 0 0 10px rgba(79, 70, 229, 0.4);
+    }
+
+    .switch::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 22px;
+      height: 22px;
+      background: #ffffff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .switch.active::after { transform: translateX(20px); }
+
+    /* ===== 壁纸库 UI ===== */
+    .wp-btn {
+      width: 100%;
+      padding: 14px 12px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      background: var(--btn-bg);
+      border: 1.5px solid var(--btn-border);
+      border-radius: 14px;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: 0.12s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      -webkit-tap-highlight-color: transparent;
+      text-shadow: var(--text-shadow);
+      margin-bottom: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .wp-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      position: relative;
+      z-index: 1;
+    }
+
+    .wp-btn:active {
+      transform: scale(0.97);
+    }
+
+    .wp-btn.primary {
+      background: transparent;
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+      text-shadow: none;
+    }
+
+    body.wallpaper .wp-btn.primary {
+      background: transparent;
+      border-color: #6366f1;
+      color: #a5b4fc;
+    }
+
+    body.wallpaper.text-dark .wp-btn.primary {
+      background: transparent;
+      border-color: #4f46e5;
+      color: #4f46e5;
+    }
+
+    .wp-library {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .wp-thumb {
+      position: relative;
+      aspect-ratio: 9 / 16;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 2.5px solid transparent;
+      background: var(--input-bg);
+      transition: 0.15s;
+    }
+
+    .wp-thumb.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+    }
+
+    body.wallpaper .wp-thumb.selected {
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4);
+    }
+
+    .wp-thumb:active {
+      transform: scale(0.95);
+    }
+
+    .wp-thumb img,
+    .wp-thumb video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+
+    .wp-thumb .del-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.65);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      transition: 0.12s;
+    }
+
+    .wp-thumb .del-btn svg {
+      width: 12px;
+      height: 12px;
+      stroke: #ffffff;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .wp-thumb .del-btn:active {
+      background: #e11d48;
+      transform: scale(0.9);
+    }
+
+    .wp-empty {
+      text-align: center;
+      padding: 30px 10px;
+      color: var(--text-dim);
+      font-size: 0.82rem;
+      font-style: italic;
+      text-shadow: var(--text-shadow);
+      line-height: 1.7;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 4px 0;
+    }
+
+    .slider-row input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 10px;
+      outline: none;
+      cursor: pointer;
+      background: linear-gradient(
+        to right,
+        var(--accent) 0%,
+        var(--accent) var(--fill, 40%),
+        var(--input-border) var(--fill, 40%),
+        var(--input-border) 100%
+      );
+    }
+
+    .slider-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 2px 6px rgba(79, 70, 229, 0.4);
+      cursor: pointer;
+      border: 3px solid white;
+    }
+
+    body.wallpaper .slider-row input[type="range"]::-webkit-slider-thumb {
+      background: #6366f1;
+      border-color: #ffffff;
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.6);
+    }
+
+    body.wallpaper.text-dark .slider-row input[type="range"]::-webkit-slider-thumb {
+      background: #4f46e5;
+      border-color: #ffffff;
+    }
+
+    .slider-row input[type="range"]::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 2px 6px rgba(79, 70, 229, 0.4);
+      cursor: pointer;
+      border: 3px solid white;
+    }
+
+    .slider-value {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-main);
+      min-width: 52px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      text-shadow: var(--text-shadow);
+    }
+
+    .hidden-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+      left: -9999px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(15, 23, 42, 0.92);
+      color: white;
+      padding: 12px 22px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.25s;
+      z-index: 9999;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      max-width: 90%;
+      text-align: center;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ===== 波纹效果 ===== */
+    .ripple-effect {
+      position: absolute;
+      border-radius: 50%;
+      background: var(--ripple-color);
+      transform: scale(0);
+      animation: ripple-anim 0.6s ease-out;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes ripple-anim {
+      to {
+        transform: scale(2.5);
+        opacity: 0;
+      }
+    }
+
+    /* ===== 自定义确认弹窗 ===== */
+    .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
+      padding: 20px;
+    }
+
+    .confirm-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .confirm-dialog {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 24px 22px 18px;
+      max-width: 320px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+      transform: scale(0.9);
+      transition: transform 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    body.wallpaper .confirm-dialog {
+      background: rgba(30, 41, 59, 0.98);
+    }
+
+    body.wallpaper.text-dark .confirm-dialog {
+      background: #ffffff;
+    }
+
+    .confirm-overlay.show .confirm-dialog {
+      transform: scale(1);
+    }
+
+    .confirm-title {
+      font-size: 1.05rem;
+      font-weight: 650;
+      color: #0f172a;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    body.wallpaper .confirm-title {
+      color: #ffffff;
+    }
+
+    body.wallpaper.text-dark .confirm-title {
+      color: #0f172a;
+    }
+
+    .confirm-message {
+      font-size: 0.88rem;
+      color: #64748b;
+      line-height: 1.5;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    body.wallpaper .confirm-message {
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    body.wallpaper.text-dark .confirm-message {
+      color: #64748b;
+    }
+
+    .confirm-btns {
+      display: flex;
+      gap: 10px;
+    }
+
+    .confirm-btn {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: 0.12s;
+      -webkit-tap-highlight-color: transparent;
+      font-family: inherit;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .confirm-btn:active {
+      transform: scale(0.96);
+      opacity: 0.85;
+    }
+
+    .confirm-btn.cancel {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    body.wallpaper .confirm-btn.cancel {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+    }
+
+    body.wallpaper.text-dark .confirm-btn.cancel {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .confirm-btn.danger {
+      background: #e11d48;
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(225, 29, 72, 0.35);
+    }
+
+    .confirm-btn.danger:active {
+      background: #be123c;
+    }
+
+    .about-card {
+      background: var(--group-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 18px;
+      padding: 20px 18px;
+      text-align: center;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    .about-card .app-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 4px;
+      text-shadow: var(--text-shadow);
+    }
+
+    .about-card .app-version {
+      font-size: 0.78rem;
+      color: var(--text-sub);
+      margin-bottom: 10px;
+      text-shadow: var(--text-shadow);
+    }
+
+    .about-card .app-desc {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      line-height: 1.6;
+      text-shadow: var(--text-shadow);
+    }
+
+    .divider { height: 1px; background: var(--divider); margin: 18px 0 16px; }
+
+    .processing {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      z-index: 9998;
+      gap: 14px;
+      font-size: 0.9rem;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(255,255,255,0.25);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 380px) {
+      .main-content { padding: 0 14px 16px; }
+      .page-header,
+      .settings-header {
+        margin: 0 -14px 16px;
+        padding: 16px 14px 12px;
+      }
+      .sub-page .sub-scroll { padding: 0 14px 20px; }
+      .sub-header { padding: 12px 14px; }
+      .sub-header h2 { font-size: 1.1rem; }
+      .field input { padding: 13px 14px; }
+      .btn { padding: 12px 8px; font-size: 0.85rem; }
+      .page-header h2,
+      .settings-header h2 { font-size: 1.4rem; }
+      .settings-item { padding: 14px 14px; }
+      .wp-library { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame" id="phoneFrame">
+    <div class="bg-layer" id="bgLayer">
+      <video id="bgVideo" muted loop playsinline preload="auto"></video>
+      <img id="bgImage" alt="">
+      <div class="bg-veil"></div>
+    </div>
+
+    <div class="processing" id="processing" style="display:none;">
+      <div class="spinner"></div>
+      <div id="processingText">处理中...</div>
+    </div>
+
+    <div class="main-content">
+      <!-- 页面1：进制转换 -->
+      <div id="page-base" class="page active">
+        <div class="page-header">
+          <h2>
+            <svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            进制转换
+            <span class="badge">BASE</span>
+          </h2>
+          <p>自由选择源进制与目标进制</p>
+        </div>
+
+        <div class="input-card">
+          <div class="base-picker">
+            <div class="picker-group">
+              <div class="picker-label">从</div>
+              <select id="fromBase">
+                <option value="2">二进制 (2)</option>
+                <option value="8">八进制 (8)</option>
+                <option value="10" selected>十进制 (10)</option>
+                <option value="16">十六进制 (16)</option>
+              </select>
+            </div>
+            <button class="swap-btn" id="swapBaseBtn" title="交换">
+              <svg viewBox="0 0 24 24"><path d="M7 4v13"/><path d="M3 8l4-4 4 4"/><path d="M17 20V7"/><path d="M21 16l-4 4-4-4"/></svg>
+            </button>
+            <div class="picker-group">
+              <div class="picker-label">到</div>
+              <select id="toBase">
+                <option value="2">二进制 (2)</option>
+                <option value="8">八进制 (8)</option>
+                <option value="10">十进制 (10)</option>
+                <option value="16" selected>十六进制 (16)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>输入值</label>
+            <input type="text" id="baseInput" placeholder="输入要转换的数值" autocomplete="off">
+          </div>
+
+          <div class="field">
+            <label>转换结果</label>
+            <div class="output-wrap">
+              <div class="output-box empty" id="baseOutput">等待输入...</div>
+              <button class="output-copy-btn" data-copy="baseOutput" title="复制">
+                <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn" id="clearBaseBtn">
+            <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            清空
+          </button>
+          <button class="btn btn-primary" id="convertBaseBtn">
+            <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            转换
+          </button>
+        </div>
+        <div class="hint" id="baseHint">输入任意进制，自动转换其他</div>
+      </div>
+
+      <!-- 页面2：ASCII -->
+      <div id="page-ascii" class="page">
+        <div class="page-header">
+          <h2>
+            <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+            ASCII 转换
+            <span class="badge">TEXT</span>
+          </h2>
+          <p>字符 ↔ ASCII 码互转</p>
+        </div>
+
+        <div class="input-card">
+          <div class="field">
+            <label>字符 ➔ ASCII 码</label>
+            <input type="text" id="charInput" placeholder="输入字符，如 A" maxlength="30" autocomplete="off">
+          </div>
+          <div class="output-wrap">
+            <div class="output-box empty" id="charToAsciiOutput">等待输入...</div>
+            <button class="output-copy-btn" data-copy="charToAsciiOutput" title="复制">
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="field">
+            <label>ASCII 码 ➔ 字符</label>
+            <textarea id="asciiInput" placeholder="输入ASCII码，用空格或逗号分隔，如 72 101 108 108 111" rows="2"></textarea>
+          </div>
+          <div class="output-wrap">
+            <div class="output-box empty" id="asciiToCharOutput">等待输入...</div>
+            <button class="output-copy-btn" data-copy="asciiToCharOutput" title="复制">
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn" id="clearAsciiBtn">
+            <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            清空
+          </button>
+          <button class="btn btn-primary" id="convertAsciiBtn">
+            <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            转换
+          </button>
+        </div>
+        <div class="hint">支持 0-127 标准 ASCII（扩展字符可能显示异常）</div>
+      </div>
+
+      <!-- 页面3：设置主页 -->
+      <div id="page-settings" class="page">
+        <div class="settings-header">
+          <h2>
+            <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            设置
+            <span class="badge">SETTINGS</span>
+          </h2>
+          <p>自定义你的使用偏好</p>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-item clickable" data-sub="sub-appearance">
+            <div class="settings-item-left">
+              <span class="settings-item-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+              </span>
+              <div>
+                <div class="settings-item-label">外观与显示</div>
+                <div class="settings-item-desc">背景壁纸、模糊强度</div>
+              </div>
+            </div>
+            <div class="settings-item-right">
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+
+          <div class="settings-item clickable" data-sub="sub-preferences">
+            <div class="settings-item-left">
+              <span class="settings-item-icon">
+                <svg viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+              </span>
+              <div>
+                <div class="settings-item-label">功能与偏好</div>
+                <div class="settings-item-desc">十六进制大写、自动转换</div>
+              </div>
+            </div>
+            <div class="settings-item-right">
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+
+          <div class="settings-item clickable" data-sub="sub-performance">
+            <div class="settings-item-left">
+              <span class="settings-item-icon">
+                <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              </span>
+              <div>
+                <div class="settings-item-label">性能与体验</div>
+                <div class="settings-item-desc">视频播放控制</div>
+              </div>
+            </div>
+            <div class="settings-item-right">
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+
+          <div class="settings-item clickable" data-sub="sub-about">
+            <div class="settings-item-left">
+              <span class="settings-item-icon">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </span>
+              <div>
+                <div class="settings-item-label">关于本软件</div>
+                <div class="settings-item-desc">版本信息与说明</div>
+              </div>
+            </div>
+            <div class="settings-item-right">
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <button class="nav-item active" data-page="page-base">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        </span>
+        <span>进制</span>
+      </button>
+      <button class="nav-item" data-page="page-ascii">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+        </span>
+        <span>ASCII</span>
+      </button>
+      <button class="nav-item" data-page="page-settings">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </span>
+        <span>设置</span>
+      </button>
+    </div>
+
+    <!-- 二级页：外观与显示 -->
+    <div id="sub-appearance" class="sub-page">
+      <div class="sub-bg"></div>
+      <div class="sub-scroll">
+        <div class="sub-header">
+          <button class="back-btn" data-back>
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <h2>外观与显示</h2>
+        </div>
+
+        <div class="settings-group">
+          <div class="group-label">背景</div>
+
+          <div class="settings-item clickable" data-sub="sub-images">
+            <div class="settings-item-left">
+              <span class="settings-item-icon">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </span>
+              <div>
+                <div class="settings-item-label">壁纸</div>
+                <div class="settings-item-desc" id="imagesDesc">0 张图片</div>
+              </div>
+            </div>
+            <div class="settings-item-right">
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+
+          <div class="settings-item clickable" data-sub="sub-videos">
+            <div class="settings-item-left">
+              <span class="settings-item-icon">
+                <svg viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><polygon points="22 8 16 12 22 16 22 8"/></svg>
+              </span>
+              <div>
+                <div class="settings-item-label">视频</div>
+                <div class="settings-item-desc" id="videosDesc">0 个视频</div>
+              </div>
+            </div>
+            <div class="settings-item-right">
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+
+          <div class="settings-item">
+            <div class="settings-item-left">
+              <span class="settings-item-icon">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+              </span>
+              <div>
+                <div class="settings-item-label">清除当前背景</div>
+                <div class="settings-item-desc">回到默认渐变（壁纸库保留）</div>
+              </div>
+            </div>
+            <button class="wp-btn primary" id="clearCurrentWpBtn" style="width:auto; padding: 10px 20px; margin: 0; font-size: 0.82rem;">清除</button>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="group-label">模糊强度</div>
+          <div class="settings-item" style="flex-direction: column; align-items: stretch; gap: 12px;">
+            <div class="settings-item-left">
+              <span class="settings-item-icon">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+              </span>
+              <div>
+                <div class="settings-item-label">模糊程度</div>
+                <div class="settings-item-desc">0 = 完全清晰，40 = 强毛玻璃</div>
+              </div>
+            </div>
+            <div class="slider-row">
+              <input type="range" id="blurSlider" min="0" max="40" value="16" step="1">
+              <span class="slider-value" id="blurValue">16px</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hint" style="padding-left: 4px; line-height: 1.7;">
+          图片 ≤ 20MB，视频 ≤ 100MB。<br>
+          视频建议使用 MP4 (H.264) 格式，自动静音循环播放。
+        </div>
+      </div>
+    </div>
+
+    <!-- 三级页：壁纸库 -->
+    <div id="sub-images" class="sub-page level3">
+      <div class="sub-bg"></div>
+      <div class="sub-scroll">
+        <div class="sub-header">
+          <button class="back-btn" data-back>
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <h2>壁纸</h2>
+        </div>
+
+        <button class="wp-btn primary" id="pickImageBtn">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          导入图片
+        </button>
+
+        <div class="wp-library" id="imageLibrary"></div>
+        <div class="wp-empty" id="imageEmpty">
+          还没有图片壁纸<br>点击上方"导入图片"
+        </div>
+
+        <div class="hint" style="padding-left: 4px; line-height: 1.7; margin-top: 12px;">
+          点击缩略图切换为当前壁纸。<br>
+          点右上角 ✕ 删除。
+        </div>
+      </div>
+    </div>
+
+    <!-- 三级页：视频库 -->
+    <div id="sub-videos" class="sub-page level3">
+      <div class="sub-bg"></div>
+      <div class="sub-scroll">
+        <div class="sub-header">
+          <button class="back-btn" data-back>
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <h2>视频</h2>
+        </div>
+
+        <button class="wp-btn primary" id="pickVideoBtn">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          导入视频
+        </button>
+
+        <div class="wp-library" id="videoLibrary"></div>
+        <div class="wp-empty" id="videoEmpty">
+          还没有视频背景<br>点击上方"导入视频"
+        </div>
+
+        <div class="hint" style="padding-left: 4px; line-height: 1.7; margin-top: 12px;">
+          点击缩略图切换为当前背景视频。<br>
+          点右上角 ✕ 删除。
+        </div>
+      </div>
+    </div>
+
+    <!-- 二级页：功能与偏好 -->
+    <div id="sub-preferences" class="sub-page">
+      <div class="sub-bg"></div>
+      <div class="sub-scroll">
+        <div class="sub-header">
+          <button class="back-btn" data-back>
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <h2>功能与偏好</h2>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-item">
+            <div class="settings-item-left">
+              <span class="settings-item-icon">
+                <svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+              </span>
+              <div>
+                <div class="settings-item-label">十六进制大写</div>
+                <div class="settings-item-desc">转换结果使用大写字母 (A-F)</div>
+              </div>
+            </div>
+            <button class="switch active" id="hexUpperSwitch" role="switch" aria-checked="true"></button>
+          </div>
+
+          <div class="settings-item">
+            <div class="settings-item-left">
+              <span class="settings-item-icon">
+                <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              </span>
+              <div>
+                <div class="settings-item-label">自动转换</div>
+                <div class="settings-item-desc">输入时实时转换，无需按按钮</div>
+              </div>
+            </div>
+            <button class="switch active" id="autoConvertSwitch" role="switch" aria-checked="true"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 二级页：性能与体验 -->
+    <div id="sub-performance" class="sub-page">
+      <div class="sub-bg"></div>
+      <div class="sub-scroll">
+        <div class="sub-header">
+          <button class="back-btn" data-back>
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <h2>性能与体验</h2>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-item">
+            <div class="settings-item-left">
+              <span class="settings-item-icon">
+                <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </span>
+              <div>
+                <div class="settings-item-label">视频播放</div>
+                <div class="settings-item-desc">允许暂停视频以节省电量</div>
+              </div>
+            </div>
+            <button class="switch active" id="videoPlaySwitch" role="switch" aria-checked="true"></button>
+          </div>
+        </div>
+
+        <div class="hint" style="padding-left: 4px; line-height: 1.7; margin-top: 8px;">
+          关闭后视频壁纸会暂停（仍显示最后一帧），可以显著降低电量消耗。页面切到后台时也会自动暂停。
+        </div>
+      </div>
+    </div>
+
+    <!-- 二级页：关于 -->
+    <div id="sub-about" class="sub-page">
+      <div class="sub-bg"></div>
+      <div class="sub-scroll">
+        <div class="sub-header">
+          <button class="back-btn" data-back>
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <h2>关于本软件</h2>
+        </div>
+
+        <div class="about-card" style="margin-top: 10px;">
+          <div class="app-name">进制 · ASCII 工具</div>
+          <div class="app-version">版本 1.8.0</div>
+          <div class="app-desc">
+            一个为移动端优化的进制转换与 ASCII 互转工具。<br>
+            支持壁纸库、视频库、动态背景。<br>
+            所有计算均在本地完成，不收集任何数据。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <input type="file" id="imageFileInput" class="hidden-input" accept="image/*">
+    <input type="file" id="videoFileInput" class="hidden-input" accept="video/mp4,video/*">
+  </div>
+
+  <!-- 自定义确认弹窗 -->
+  <div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-dialog">
+      <div class="confirm-title" id="confirmTitle">确认删除</div>
+      <div class="confirm-message" id="confirmMessage">确定要删除吗？</div>
+      <div class="confirm-btns">
+        <button class="confirm-btn cancel" id="confirmCancel">取消</button>
+        <button class="confirm-btn danger" id="confirmOk">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    (function() {
+      // ============================================================
+      // 通用工具
+      // ============================================================
+      const toast = document.getElementById('toast');
+      let toastTimer = null;
+      function showToast(msg, duration = 2200) {
+        toast.textContent = msg;
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
+      }
+
+      const processing = document.getElementById('processing');
+      const processingText = document.getElementById('processingText');
+      function showProcessing(text) {
+        processingText.textContent = text || '处理中...';
+        processing.style.display = 'flex';
+      }
+      function hideProcessing() { processing.style.display = 'none'; }
+
+      // ============================================================
+      // 复制到剪贴板
+      // ============================================================
+      async function copyText(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+          try {
+            await navigator.clipboard.writeText(text);
+            return true;
+          } catch (e) {}
+        }
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.left = '-9999px';
+          ta.style.top = '0';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          const ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+          return ok;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      const COPY_ICON_SVG = '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+      const CHECK_ICON_SVG = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+
+      function initCopyButtons() {
+        document.querySelectorAll('.output-copy-btn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const targetId = btn.dataset.copy;
+            const target = document.getElementById(targetId);
+            if (!target) return;
+
+            // 优先读 data-copy-text（纯内容，不含警告提示）
+            const text = (target.dataset.copyText !== undefined)
+              ? target.dataset.copyText
+              : target.textContent.trim();
+
+            if (!text || target.classList.contains('empty')) {
+              showToast('没有内容可复制');
+              return;
+            }
+
+            const ok = await copyText(text);
+            if (ok) {
+              btn.classList.add('copied');
+              btn.innerHTML = CHECK_ICON_SVG;
+              showToast('已复制');
+              setTimeout(() => {
+                btn.classList.remove('copied');
+                btn.innerHTML = COPY_ICON_SVG;
+              }, 1500);
+            } else {
+              showToast('复制失败');
+            }
+          });
+        });
+      }
+
+      // ============================================================
+      // 波纹效果
+      // ============================================================
+      function attachRipple(el) {
+        el.addEventListener('pointerdown', function(e) {
+          const rect = el.getBoundingClientRect();
+          const size = Math.max(rect.width, rect.height);
+          const x = e.clientX - rect.left - size / 2;
+          const y = e.clientY - rect.top - size / 2;
+
+          const ripple = document.createElement('span');
+          ripple.className = 'ripple-effect';
+          ripple.style.width = size + 'px';
+          ripple.style.height = size + 'px';
+          ripple.style.left = x + 'px';
+          ripple.style.top = y + 'px';
+
+          el.appendChild(ripple);
+          setTimeout(() => {
+            ripple.remove();
+          }, 600);
+        });
+      }
+
+      function initRipples() {
+        const selectors = [
+          '.btn',
+          '.wp-btn',
+          '.swap-btn',
+          '.nav-item',
+          '.sub-header .back-btn',
+          '.confirm-btn'
+        ];
+        selectors.forEach(sel => {
+          document.querySelectorAll(sel).forEach(attachRipple);
+        });
+      }
+
+      // ============================================================
+      // 自定义确认弹窗
+      // ============================================================
+      const confirmOverlay = document.getElementById('confirmOverlay');
+      const confirmTitle = document.getElementById('confirmTitle');
+      const confirmMessage = document.getElementById('confirmMessage');
+      const confirmOk = document.getElementById('confirmOk');
+      const confirmCancel = document.getElementById('confirmCancel');
+
+      let confirmResolve = null;
+
+      function showConfirm(options) {
+        return new Promise((resolve) => {
+          confirmTitle.textContent = options.title || '确认';
+          confirmMessage.textContent = options.message || '确定吗？';
+          confirmOk.textContent = options.okText || '确定';
+          confirmCancel.textContent = options.cancelText || '取消';
+          confirmResolve = resolve;
+          confirmOverlay.classList.add('show');
+        });
+      }
+
+      function closeConfirm(result) {
+        confirmOverlay.classList.remove('show');
+        if (confirmResolve) {
+          confirmResolve(result);
+          confirmResolve = null;
+        }
+      }
+
+      confirmOk.addEventListener('click', () => closeConfirm(true));
+      confirmCancel.addEventListener('click', () => closeConfirm(false));
+
+      confirmOverlay.addEventListener('click', (e) => {
+        if (e.target === confirmOverlay) closeConfirm(false);
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && confirmOverlay.classList.contains('show')) {
+          closeConfirm(false);
+        }
+      });
+
+      // ============================================================
+      // IndexedDB
+      // ============================================================
+      const DB_NAME = 'wallpaper-db';
+      const DB_VERSION = 3;
+      const STORE_NAME = 'files';
+
+      function openDB() {
+        return new Promise((resolve, reject) => {
+          if (!window.indexedDB) {
+            reject(new Error('当前浏览器不支持 IndexedDB，请用 http:// 打开'));
+            return;
+          }
+          const req = indexedDB.open(DB_NAME, DB_VERSION);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+              db.createObjectStore(STORE_NAME);
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error || new Error('打开数据库失败'));
+          req.onblocked = () => reject(new Error('数据库被其他页面占用'));
+        });
+      }
+
+      async function dbGet(key) {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const req = tx.objectStore(STORE_NAME).get(key);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      }
+      async function dbSet(key, value) {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.objectStore(STORE_NAME).put(value, key);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      }
+
+      // ============================================================
+      // 设置
+      // ============================================================
+      const defaultSettings = {
+        hexUpperCase: true,
+        autoConvert: true,
+        glassBlur: 16,
+        videoPlaying: true
+      };
+
+      const SETTINGS_KEY = 'tool-settings-v3';
+      let settings = { ...defaultSettings };
+      try {
+        const saved = localStorage.getItem(SETTINGS_KEY);
+        if (saved) settings = { ...defaultSettings, ...JSON.parse(saved) };
+      } catch (e) {}
+
+      function saveSettings() {
+        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+      }
+
+      // ============================================================
+      // 壁纸数据
+      // ============================================================
+      const bgVideo = document.getElementById('bgVideo');
+      const bgImage = document.getElementById('bgImage');
+
+      let imageList = [];
+      let videoList = [];
+      let currentImageId = null;
+      let currentVideoId = null;
+      let currentType = null;
+
+      let currentBgUrl = null;
+      const thumbUrls = new Map();
+
+      async function loadAllData() {
+        imageList = (await dbGet('image-list')) || [];
+        videoList = (await dbGet('video-list')) || [];
+        currentImageId = (await dbGet('current-image')) || null;
+        currentVideoId = (await dbGet('current-video')) || null;
+        currentType = (await dbGet('current-type')) || null;
+      }
+
+      async function saveAllData() {
+        await dbSet('image-list', imageList);
+        await dbSet('video-list', videoList);
+        await dbSet('current-image', currentImageId);
+        await dbSet('current-video', currentVideoId);
+        await dbSet('current-type', currentType);
+      }
+
+      function findImage(id) { return imageList.find(w => w.id === id); }
+      function findVideo(id) { return videoList.find(w => w.id === id); }
+
+      function makeId() {
+        return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      }
+
+      // ============================================================
+      // 应用背景
+      // ============================================================
+      function applyTheme() {
+        const hasWallpaper = !!currentBgUrl;
+        document.body.classList.toggle('wallpaper', hasWallpaper);
+        document.body.classList.remove('text-dark');
+        document.documentElement.style.setProperty('--glass-blur', settings.glassBlur + 'px');
+      }
+
+      async function applyCurrentBg() {
+        if (currentBgUrl) {
+          if (bgImage.src) URL.revokeObjectURL(bgImage.src);
+          if (bgVideo.src) URL.revokeObjectURL(bgVideo.src);
+          currentBgUrl = null;
+        }
+        bgVideo.pause();
+        bgVideo.removeAttribute('src');
+        bgImage.removeAttribute('src');
+        bgVideo.classList.remove('active');
+        bgImage.classList.remove('active');
+        bgVideo.load();
+
+        if (!currentType) {
+          applyTheme();
+          return;
+        }
+
+        if (currentType === 'image' && currentImageId) {
+          const wp = findImage(currentImageId);
+          if (wp) {
+            currentBgUrl = URL.createObjectURL(wp.blob);
+            bgImage.src = currentBgUrl;
+            bgImage.classList.add('active');
+          } else {
+            currentType = null;
+            currentImageId = null;
+            await saveAllData();
+          }
+        } else if (currentType === 'video' && currentVideoId) {
+          const wp = findVideo(currentVideoId);
+          if (wp) {
+            currentBgUrl = URL.createObjectURL(wp.blob);
+            bgVideo.src = currentBgUrl;
+            bgVideo.classList.add('active');
+            if (settings.videoPlaying) {
+              bgVideo.play().catch(err => {
+                console.warn('视频播放失败:', err);
+              });
+            } else {
+              bgVideo.currentTime = 0.01;
+            }
+          } else {
+            currentType = null;
+            currentVideoId = null;
+            await saveAllData();
+          }
+        }
+
+        applyTheme();
+        updateDescriptions();
+      }
+
+      // ============================================================
+      // 渲染缩略图
+      // ============================================================
+      const DEL_ICON_SVG = '<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+      function renderLibrary(list, gridEl, emptyEl, selectedId, onSelect, onDelete) {
+        gridEl.innerHTML = '';
+        if (list.length === 0) {
+          emptyEl.style.display = 'block';
+          return;
+        }
+        emptyEl.style.display = 'none';
+
+        [...list].reverse().forEach(wp => {
+          const thumb = document.createElement('div');
+          thumb.className = 'wp-thumb' + (wp.id === selectedId ? ' selected' : '');
+          thumb.dataset.id = wp.id;
+
+          const url = URL.createObjectURL(wp.blob);
+          thumbUrls.set(wp.id, url);
+
+          if (wp.type === 'image') {
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = '';
+            thumb.appendChild(img);
+          } else {
+            const video = document.createElement('video');
+            video.src = url;
+            video.muted = true;
+            video.playsInline = true;
+            video.preload = 'metadata';
+            thumb.appendChild(video);
+            video.addEventListener('loadedmetadata', () => {
+              try { video.currentTime = 0.01; } catch (e) {}
+            }, { once: true });
+          }
+
+          const del = document.createElement('button');
+          del.className = 'del-btn';
+          del.innerHTML = DEL_ICON_SVG;
+          del.title = '删除';
+          del.addEventListener('click', (e) => {
+            e.stopPropagation();
+            onDelete(wp.id);
+          });
+          thumb.appendChild(del);
+
+          thumb.addEventListener('click', () => onSelect(wp.id));
+
+          gridEl.appendChild(thumb);
+        });
+      }
+
+      function renderImageLibrary() {
+        renderLibrary(
+          imageList.map(w => ({ ...w, type: 'image' })),
+          document.getElementById('imageLibrary'),
+          document.getElementById('imageEmpty'),
+          currentType === 'image' ? currentImageId : null,
+          selectImage,
+          deleteImage
+        );
+      }
+
+      function renderVideoLibrary() {
+        renderLibrary(
+          videoList.map(w => ({ ...w, type: 'video' })),
+          document.getElementById('videoLibrary'),
+          document.getElementById('videoEmpty'),
+          currentType === 'video' ? currentVideoId : null,
+          selectVideo,
+          deleteVideo
+        );
+      }
+
+      // ============================================================
+      // 选择 / 删除
+      // ============================================================
+      async function selectImage(id) {
+        currentImageId = id;
+        currentType = 'image';
+        settings.videoPlaying = true;
+        if (bgVideo) bgVideo.pause();
+        saveSettings();
+        videoPlaySwitch.classList.add('active');
+        videoPlaySwitch.setAttribute('aria-checked', 'true');
+        await saveAllData();
+        await applyCurrentBg();
+        renderImageLibrary();
+        renderVideoLibrary();
+        showToast('已切换为图片壁纸');
+      }
+
+      async function selectVideo(id) {
+        currentVideoId = id;
+        currentType = 'video';
+        settings.videoPlaying = true;
+        saveSettings();
+        videoPlaySwitch.classList.add('active');
+        videoPlaySwitch.setAttribute('aria-checked', 'true');
+        await saveAllData();
+        await applyCurrentBg();
+        renderImageLibrary();
+        renderVideoLibrary();
+        showToast('已切换为视频背景');
+      }
+
+      async function deleteImage(id) {
+        const wp = findImage(id);
+        if (!wp) return;
+
+        const ok = await showConfirm({
+          title: '删除图片',
+          message: '确定要删除这张图片吗？此操作不可恢复。',
+          okText: '删除',
+          cancelText: '取消'
+        });
+        if (!ok) return;
+
+        imageList = imageList.filter(w => w.id !== id);
+        if (currentImageId === id) {
+          currentImageId = null;
+          if (currentType === 'image') currentType = null;
+        }
+        await saveAllData();
+        await applyCurrentBg();
+        renderImageLibrary();
+        renderVideoLibrary();
+        showToast('已删除');
+      }
+
+      async function deleteVideo(id) {
+        const wp = findVideo(id);
+        if (!wp) return;
+
+        const ok = await showConfirm({
+          title: '删除视频',
+          message: '确定要删除这个视频吗？此操作不可恢复。',
+          okText: '删除',
+          cancelText: '取消'
+        });
+        if (!ok) return;
+
+        videoList = videoList.filter(w => w.id !== id);
+        if (currentVideoId === id) {
+          currentVideoId = null;
+          if (currentType === 'video') currentType = null;
+        }
+        await saveAllData();
+        await applyCurrentBg();
+        renderImageLibrary();
+        renderVideoLibrary();
+        showToast('已删除');
+      }
+
+      // ============================================================
+      // 导入
+      // ============================================================
+      async function importImage(file) {
+        try {
+          const isImage = file.type.startsWith('image/') ||
+                          /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(file.name);
+          if (!isImage) { showToast('请选择图片文件'); return; }
+          if (file.size > 20 * 1024 * 1024) { showToast('图片请控制在 20MB 以内'); return; }
+
+          showProcessing('正在保存图片...');
+          const wp = { id: makeId(), name: file.name || '图片', blob: file };
+          imageList.push(wp);
+          currentImageId = wp.id;
+          currentType = 'image';
+          await saveAllData();
+          hideProcessing();
+          await applyCurrentBg();
+          renderImageLibrary();
+          renderVideoLibrary();
+          showToast('图片已添加并应用');
+        } catch (e) {
+          hideProcessing();
+          console.error('导入图片失败:', e);
+          let msg = '导入图片失败';
+          if (e && e.name === 'SecurityError') msg = '浏览器禁止存储，请用 http:// 打开（非 file://）';
+          else if (e && e.name === 'QuotaExceededError') msg = '存储空间不足，请清理壁纸库';
+          else if (e && e.message) msg = '导入失败：' + e.message;
+          showToast(msg, 3500);
+        }
+      }
+
+      async function importVideo(file) {
+        try {
+          const isVideo = file.type.startsWith('video/') ||
+                          /\.(mp4|webm|mov|m4v|ogv)$/i.test(file.name);
+          if (!isVideo) { showToast('请选择视频文件'); return; }
+          if (file.size > 100 * 1024 * 1024) { showToast('视频请控制在 100MB 以内'); return; }
+
+          showProcessing('正在保存视频，请稍候...');
+          const wp = { id: makeId(), name: file.name || '视频', blob: file };
+          videoList.push(wp);
+          currentVideoId = wp.id;
+          currentType = 'video';
+          settings.videoPlaying = true;
+          saveSettings();
+          videoPlaySwitch.classList.add('active');
+          videoPlaySwitch.setAttribute('aria-checked', 'true');
+          await saveAllData();
+          hideProcessing();
+          await applyCurrentBg();
+          renderImageLibrary();
+          renderVideoLibrary();
+          showToast('视频已添加并应用');
+        } catch (e) {
+          hideProcessing();
+          console.error('导入视频失败:', e);
+          let msg = '导入视频失败';
+          if (e && e.name === 'SecurityError') msg = '浏览器禁止存储，请用 http:// 打开（非 file://）';
+          else if (e && e.name === 'QuotaExceededError') msg = '存储空间不足，请清理壁纸库';
+          else if (e && e.message) msg = '导入失败：' + e.message;
+          showToast(msg, 3500);
+        }
+      }
+
+      async function clearCurrentBg() {
+        currentType = null;
+        currentImageId = null;
+        currentVideoId = null;
+        await saveAllData();
+        await applyCurrentBg();
+        renderImageLibrary();
+        renderVideoLibrary();
+        showToast('已恢复默认背景（壁纸库保留）');
+      }
+
+      // ============================================================
+      // 描述文字
+      // ============================================================
+      function updateDescriptions() {
+        const imgDesc = document.getElementById('imagesDesc');
+        const vidDesc = document.getElementById('videosDesc');
+        if (imgDesc) {
+          imgDesc.textContent = imageList.length + ' 张图片' +
+            (currentType === 'image' ? '（当前）' : '');
+        }
+        if (vidDesc) {
+          vidDesc.textContent = videoList.length + ' 个视频' +
+            (currentType === 'video' ? '（当前）' : '');
+        }
+      }
+
+      // ============================================================
+      // UI 绑定
+      // ============================================================
+      const imageFileInput = document.getElementById('imageFileInput');
+      const videoFileInput = document.getElementById('videoFileInput');
+      const videoPlaySwitch = document.getElementById('videoPlaySwitch');
+      const blurSlider = document.getElementById('blurSlider');
+      const blurValue = document.getElementById('blurValue');
+
+      document.getElementById('pickImageBtn').addEventListener('click', () => {
+        imageFileInput.value = '';
+        imageFileInput.click();
+      });
+      document.getElementById('pickVideoBtn').addEventListener('click', () => {
+        videoFileInput.value = '';
+        videoFileInput.click();
+      });
+      document.getElementById('clearCurrentWpBtn').addEventListener('click', clearCurrentBg);
+
+      imageFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) importImage(file);
+      });
+      videoFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) importVideo(file);
+      });
+
+      videoPlaySwitch.addEventListener('click', function() {
+        settings.videoPlaying = !settings.videoPlaying;
+        this.classList.toggle('active', settings.videoPlaying);
+        this.setAttribute('aria-checked', settings.videoPlaying);
+        saveSettings();
+
+        if (currentType === 'video') {
+          if (settings.videoPlaying) {
+            bgVideo.play().catch(() => showToast('播放失败，请重试'));
+          } else {
+            bgVideo.pause();
+          }
+        }
+      });
+
+      blurSlider.addEventListener('input', function() {
+        // 更新滑块已填充部分的百分比
+        const min = parseInt(this.min, 10) || 0;
+        const max = parseInt(this.max, 10) || 100;
+        const val = parseInt(this.value, 10);
+        const fillPct = ((val - min) / (max - min)) * 100;
+        this.style.setProperty('--fill', fillPct + '%');
+
+        blurValue.textContent = this.value + 'px';
+        document.documentElement.style.setProperty('--glass-blur', this.value + 'px');
+        const hasWallpaper = !!currentBgUrl;
+        document.body.classList.remove('text-dark');
+      });
+
+      blurSlider.addEventListener('change', function() {
+        settings.glassBlur = parseInt(this.value, 10);
+        saveSettings();
+        applyTheme();
+      });
+
+      // ============================================================
+      // 页面导航
+      // ============================================================
+      const phoneFrame = document.getElementById('phoneFrame');
+      const pages = {
+        'page-base': document.getElementById('page-base'),
+        'page-ascii': document.getElementById('page-ascii'),
+        'page-settings': document.getElementById('page-settings')
+      };
+      const subPages = {
+        'sub-appearance': document.getElementById('sub-appearance'),
+        'sub-images': document.getElementById('sub-images'),
+        'sub-videos': document.getElementById('sub-videos'),
+        'sub-preferences': document.getElementById('sub-preferences'),
+        'sub-performance': document.getElementById('sub-performance'),
+        'sub-about': document.getElementById('sub-about')
+      };
+      const navItems = document.querySelectorAll('.nav-item');
+
+      function switchPage(pageId) {
+        Object.keys(pages).forEach(id => {
+          pages[id].classList.toggle('active', id === pageId);
+        });
+        navItems.forEach(item => {
+          item.classList.toggle('active', item.dataset.page === pageId);
+        });
+        document.querySelector('.main-content').scrollTop = 0;
+      }
+
+      const subStack = [];
+
+      function openSubPage(subId) {
+        const el = subPages[subId];
+        if (!el) return;
+
+        const prevTopId = subStack[subStack.length - 1];
+        if (prevTopId && subPages[prevTopId]) {
+          subPages[prevTopId].classList.remove('active');
+        }
+
+        subStack.push(subId);
+        phoneFrame.classList.add('sub-active');
+
+        el.classList.remove('active');
+        void el.offsetWidth;
+        el.classList.add('active');
+
+        const sc = el.querySelector('.sub-scroll');
+        if (sc) sc.scrollTop = 0;
+      }
+
+      let isClosing = false;
+      function closeTopSubPage() {
+        if (isClosing) return;
+        if (subStack.length === 0) return;
+        isClosing = true;
+
+        const topId = subStack[subStack.length - 1];
+        const topEl = subPages[topId];
+
+        const goingBackToMain = subStack.length === 1;
+
+        if (subStack.length >= 2) {
+          const belowId = subStack[subStack.length - 2];
+          const belowEl = subPages[belowId];
+          if (belowEl) belowEl.classList.add('active');
+        }
+
+        if (goingBackToMain) {
+          phoneFrame.classList.remove('sub-active');
+        }
+
+        topEl.classList.remove('active');
+
+        let finished = false;
+        const finish = () => {
+          if (finished) return;
+          finished = true;
+
+          subStack.pop();
+          isClosing = false;
+        };
+
+        const handler = (e) => {
+          if (e.target === topEl && e.propertyName === 'transform') {
+            topEl.removeEventListener('transitionend', handler);
+            finish();
+          }
+        };
+        topEl.addEventListener('transitionend', handler);
+
+        setTimeout(() => {
+          topEl.removeEventListener('transitionend', handler);
+          finish();
+        }, 500);
+      }
+
+      function closeAllSubPages() {
+        subStack.length = 0;
+        Object.keys(subPages).forEach(id => {
+          subPages[id].classList.remove('active');
+        });
+        phoneFrame.classList.remove('sub-active');
+      }
+
+      navItems.forEach(btn => {
+        btn.addEventListener('click', function() {
+          const pageId = this.dataset.page;
+          if (pageId) {
+            closeAllSubPages();
+            switchPage(pageId);
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-sub]').forEach(item => {
+        item.addEventListener('click', function() {
+          const subId = this.dataset.sub;
+          if (subId) openSubPage(subId);
+        });
+      });
+
+      document.querySelectorAll('[data-back]').forEach(btn => {
+        btn.addEventListener('click', closeTopSubPage);
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !confirmOverlay.classList.contains('show')) {
+          closeTopSubPage();
+        }
+      });
+
+      // ============================================================
+      // 进制转换
+      // ============================================================
+      const fromBaseSel = document.getElementById('fromBase');
+      const toBaseSel = document.getElementById('toBase');
+      const baseInput = document.getElementById('baseInput');
+      const baseOutput = document.getElementById('baseOutput');
+      const clearBaseBtn = document.getElementById('clearBaseBtn');
+      const convertBaseBtn = document.getElementById('convertBaseBtn');
+      const swapBaseBtn = document.getElementById('swapBaseBtn');
+      const baseHint = document.getElementById('baseHint');
+
+      const baseRegex = { 2: /^[01]+$/, 8: /^[0-7]+$/, 10: /^\d+$/, 16: /^[0-9A-Fa-f]+$/ };
+      const baseNames = { 2: '二进制', 8: '八进制', 10: '十进制', 16: '十六进制' };
+      const baseValidChars = { 2: '0 和 1', 8: '0-7', 10: '0-9', 16: '0-9 A-F' };
+
+      function formatOutput(num, base) {
+        let result = num.toString(base);
+        if (base === 16) result = settings.hexUpperCase ? result.toUpperCase() : result.toLowerCase();
+        return result;
+      }
+
+      function setHint(text, color) {
+        baseHint.textContent = text;
+        baseHint.style.color = color || '';
+      }
+
+      function doConvert() {
+        const fromBase = parseInt(fromBaseSel.value, 10);
+        const toBase = parseInt(toBaseSel.value, 10);
+        let raw = baseInput.value.trim();
+
+        if (raw === '') {
+          baseOutput.textContent = '等待输入...';
+          baseOutput.classList.add('empty');
+          delete baseOutput.dataset.copyText;
+          setHint('输入任意进制，自动转换其他', '');
+          return;
+        }
+
+        raw = raw.replace(/\s+/g, '');
+
+        if (!baseRegex[fromBase].test(raw)) {
+          baseOutput.textContent = '无法转换';
+          baseOutput.classList.add('empty');
+          delete baseOutput.dataset.copyText;
+          setHint(`❌ ${baseNames[fromBase]}只能包含 ${baseValidChars[fromBase]}`, '#e11d48');
+          return;
+        }
+
+        let num;
+        try { num = parseInt(raw, fromBase); } catch (e) { num = NaN; }
+
+        if (isNaN(num) || !Number.isSafeInteger(num)) {
+          baseOutput.textContent = '无法转换';
+          baseOutput.classList.add('empty');
+          delete baseOutput.dataset.copyText;
+          setHint('❌ 数值无效或超出安全范围', '#e11d48');
+          return;
+        }
+
+        const result = formatOutput(num, toBase);
+        baseOutput.textContent = result;
+        baseOutput.dataset.copyText = result;
+        baseOutput.classList.remove('empty');
+        setHint(`✅ ${baseNames[fromBase]} → ${baseNames[toBase]} 转换成功`, '#16a34a');
+      }
+
+      function filterBaseInput() {
+        const fromBase = parseInt(fromBaseSel.value, 10);
+        let val = baseInput.value;
+        if (fromBase === 2) val = val.replace(/[^01]/g, '');
+        else if (fromBase === 8) val = val.replace(/[^0-7]/g, '');
+        else if (fromBase === 10) val = val.replace(/[^\d]/g, '');
+        else if (fromBase === 16) val = val.replace(/[^0-9A-Fa-f]/g, '');
+        if (val !== baseInput.value) baseInput.value = val;
+        return val;
+      }
+
+      baseInput.addEventListener('input', function() {
+        filterBaseInput();
+        if (settings.autoConvert) doConvert();
+      });
+      fromBaseSel.addEventListener('change', function() { filterBaseInput(); doConvert(); });
+      toBaseSel.addEventListener('change', doConvert);
+      swapBaseBtn.addEventListener('click', function() {
+        const from = fromBaseSel.value;
+        const to = toBaseSel.value;
+        fromBaseSel.value = to;
+        toBaseSel.value = from;
+        filterBaseInput();
+        doConvert();
+      });
+      clearBaseBtn.addEventListener('click', function() {
+        baseInput.value = '';
+        baseOutput.textContent = '等待输入...';
+        baseOutput.classList.add('empty');
+        delete baseOutput.dataset.copyText;
+        setHint('输入任意进制，自动转换其他', '');
+      });
+      convertBaseBtn.addEventListener('click', doConvert);
+
+      baseInput.addEventListener('paste', function(e) {
+        e.preventDefault();
+        const pasted = (e.clipboardData || window.clipboardData).getData('text');
+        if (!pasted) return;
+        const fromBase = parseInt(fromBaseSel.value, 10);
+        let filtered = pasted;
+        if (fromBase === 2) filtered = pasted.replace(/[^01]/g, '');
+        else if (fromBase === 8) filtered = pasted.replace(/[^0-7]/g, '');
+        else if (fromBase === 10) filtered = pasted.replace(/[^\d]/g, '');
+        else if (fromBase === 16) filtered = pasted.replace(/[^0-9A-Fa-f]/g, '');
+        baseInput.value = filtered;
+        baseInput.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+
+      // ============================================================
+      // ASCII
+      // ============================================================
+      const charInput = document.getElementById('charInput');
+      const asciiInput = document.getElementById('asciiInput');
+      const charToAsciiOutput = document.getElementById('charToAsciiOutput');
+      const asciiToCharOutput = document.getElementById('asciiToCharOutput');
+      const clearAsciiBtn = document.getElementById('clearAsciiBtn');
+      const convertAsciiBtn = document.getElementById('convertAsciiBtn');
+
+      function updateCharToAscii() {
+        const str = charInput.value;
+        if (str.length === 0) {
+          charToAsciiOutput.textContent = '等待输入...';
+          charToAsciiOutput.classList.add('empty');
+          delete charToAsciiOutput.dataset.copyText;
+          return;
+        }
+        const chars = Array.from(str).slice(0, 30);
+        const asciiCodes = chars.map(ch => ch.codePointAt(0));
+        const result = asciiCodes.join(' ');
+        charToAsciiOutput.textContent = result;
+        charToAsciiOutput.dataset.copyText = result;
+        charToAsciiOutput.classList.remove('empty');
+      }
+
+      function updateAsciiToChar() {
+        const raw = asciiInput.value.trim();
+        if (raw === '') {
+          asciiToCharOutput.textContent = '等待输入...';
+          asciiToCharOutput.classList.add('empty');
+          delete asciiToCharOutput.dataset.copyText;
+          return;
+        }
+        const parts = raw.split(/[\s,，、]+/).filter(s => s.length > 0);
+        const chars = [];
+        let valid = true;
+        for (let p of parts) {
+          const num = Number(p);
+          if (isNaN(num) || !Number.isInteger(num) || num < 0 || num > 127) {
+            valid = false;
+            continue;
+          }
+          chars.push(String.fromCodePoint(num));
+        }
+        if (chars.length === 0) {
+          asciiToCharOutput.textContent = '没有有效的ASCII码 (0-127)';
+          asciiToCharOutput.classList.add('empty');
+          delete asciiToCharOutput.dataset.copyText;
+          return;
+        }
+        const pureResult = chars.join('');
+        asciiToCharOutput.dataset.copyText = pureResult;   // 纯内容，用于复制
+        let display = pureResult;
+        if (!valid) display += '  ⚠️ (部分码无效已忽略)';
+        asciiToCharOutput.textContent = display;
+        asciiToCharOutput.classList.remove('empty');
+      }
+
+      charInput.addEventListener('input', function() {
+        if (settings.autoConvert) updateCharToAscii();
+      });
+      asciiInput.addEventListener('input', function() {
+        if (settings.autoConvert) updateAsciiToChar();
+      });
+
+      clearAsciiBtn.addEventListener('click', function() {
+        charInput.value = '';
+        asciiInput.value = '';
+        charToAsciiOutput.textContent = '等待输入...';
+        charToAsciiOutput.classList.add('empty');
+        delete charToAsciiOutput.dataset.copyText;
+        asciiToCharOutput.textContent = '等待输入...';
+        asciiToCharOutput.classList.add('empty');
+        delete asciiToCharOutput.dataset.copyText;
+      });
+
+      convertAsciiBtn.addEventListener('click', function() {
+        updateCharToAscii();
+        updateAsciiToChar();
+      });
+
+      // ============================================================
+      // 其他设置
+      // ============================================================
+      const hexUpperSwitch = document.getElementById('hexUpperSwitch');
+      const autoConvertSwitch = document.getElementById('autoConvertSwitch');
+
+      hexUpperSwitch.addEventListener('click', function() {
+        settings.hexUpperCase = !settings.hexUpperCase;
+        this.classList.toggle('active', settings.hexUpperCase);
+        this.setAttribute('aria-checked', settings.hexUpperCase);
+        saveSettings();
+        if (parseInt(toBaseSel.value, 10) === 16) doConvert();
+      });
+
+      autoConvertSwitch.addEventListener('click', function() {
+        settings.autoConvert = !settings.autoConvert;
+        this.classList.toggle('active', settings.autoConvert);
+        this.setAttribute('aria-checked', settings.autoConvert);
+        saveSettings();
+        if (settings.autoConvert) {
+          doConvert();
+          updateCharToAscii();
+          updateAsciiToChar();
+        }
+      });
+
+      // ============================================================
+      // 初始化
+      // ============================================================
+      function initUIFromSettings() {
+        hexUpperSwitch.classList.toggle('active', settings.hexUpperCase);
+        hexUpperSwitch.setAttribute('aria-checked', settings.hexUpperCase);
+        autoConvertSwitch.classList.toggle('active', settings.autoConvert);
+        autoConvertSwitch.setAttribute('aria-checked', settings.autoConvert);
+        videoPlaySwitch.classList.toggle('active', settings.videoPlaying);
+        videoPlaySwitch.setAttribute('aria-checked', settings.videoPlaying);
+
+        blurSlider.value = settings.glassBlur;
+        blurValue.textContent = settings.glassBlur + 'px';
+
+        // 初始化滑块填充
+        {
+          const min = parseInt(blurSlider.min, 10) || 0;
+          const max = parseInt(blurSlider.max, 10) || 100;
+          const val = parseInt(blurSlider.value, 10);
+          const fillPct = ((val - min) / (max - min)) * 100;
+          blurSlider.style.setProperty('--fill', fillPct + '%');
+        }
+      }
+
+      async function init() {
+        initUIFromSettings();
+        clearBaseBtn.click();
+        await loadAllData();
+        await applyCurrentBg();
+        renderImageLibrary();
+        renderVideoLibrary();
+        updateDescriptions();
+
+        initRipples();
+        initCopyButtons();
+
+        document.addEventListener('visibilitychange', () => {
+          if (currentType !== 'video') return;
+          if (document.hidden) bgVideo.pause();
+          else if (settings.videoPlaying) bgVideo.play().catch(() => {});
+        });
+      }
+
+      init();
+      window.addEventListener('beforeunload', () => {
+        if (currentBgUrl) URL.revokeObjectURL(currentBgUrl);
+        thumbUrls.forEach(url => URL.revokeObjectURL(url));
+      });
+    })();
+  </script>
+</body>
+</html>
